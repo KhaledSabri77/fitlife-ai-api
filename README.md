@@ -1,40 +1,46 @@
 # FitLife AI – Fitness & Nutrition Planner API
 
-AI-powered fitness and nutrition planning API built with FastAPI, using real Kaggle datasets.
+Personalized workout and diet plans via a clean FastAPI endpoint.
 
-## Datasets
-- **Gym Exercises**: 617 exercises from [rishitmurarka/gym-exercises-dataset](https://www.kaggle.com/datasets/rishitmurarka/gym-exercises-dataset)
-- **Nutrition Meals**: 1,698 meal plans from [bitanianielsen/nutrition-daily-meals-in-diseases-cases](https://www.kaggle.com/datasets/bitanianielsen/nutrition-daily-meals-in-diseases-cases)
+## Endpoints
 
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/generate-plan` | Generate full workout + diet plan |
-| POST | `/bmi` | Calculate BMI |
-| GET | `/health` | Health check |
-| GET | `/dataset-info` | Dataset metadata |
-| GET | `/docs` | Swagger UI |
+| Method | Path             | Description                  |
+|--------|------------------|------------------------------|
+| GET    | `/`              | API info & available routes  |
+| GET    | `/health`        | Health check                 |
+| POST   | `/generate-plan` | Generate workout + diet plan |
+| GET    | `/docs`          | Interactive Swagger UI       |
 
 ## Example Request
 
 ```bash
-curl -X POST https://YOUR-URL/generate-plan \
+curl -X POST https://YOUR-APP.koyeb.app/generate-plan \
   -H "Content-Type: application/json" \
   -d '{
-    "age": 22,
+    "age": 28,
     "gender": "male",
-    "weight": 75,
-    "height": 1.75,
-    "goal": "muscle gain",
+    "weight": 82.0,
+    "height": 1.78,
+    "goal": "gain_muscle",
     "workout_days": 4,
-    "level": "beginner",
-    "equipment": "home",
-    "dietary_preference": "none"
+    "level": "intermediate",
+    "equipment": "full_gym",
+    "dietary_preference": "standard"
   }'
 ```
 
-## Tech Stack
-- FastAPI + Uvicorn
-- pandas + scikit-learn (cosine similarity)
-- Pydantic validation
+## Deploy on Koyeb (Free Tier)
+
+1. Push this repo to GitHub
+2. Go to [app.koyeb.com](https://app.koyeb.com)
+3. **Create Web Service** → Select GitHub → Pick this repo
+4. Koyeb auto-detects the Dockerfile
+5. Instance: select **Eco** (free)
+6. Click **Deploy**
+
+## Local Development
+
+```bash
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
