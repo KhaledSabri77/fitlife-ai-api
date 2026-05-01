@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
-from typing import List
+from pydantic import BaseModel
+from typing import List, Dict, Any
+
 
 
 class UserInput(BaseModel):
@@ -38,9 +39,9 @@ class DietPlan(BaseModel):
 
 
 class PlanResponse(BaseModel):
-    bmi: str
+    bmi: float
     bmi_category: str
-    daily_calorie_target: str
+    daily_calorie_target: float
     recommendations: str
-    workout_plan: List[dict]
-    diet_plan: dict
+    workout_plan: List[Dict[str, Any]]
+    diet_plan: Dict[str, Any]
