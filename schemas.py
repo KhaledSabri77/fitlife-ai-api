@@ -4,16 +4,15 @@ from typing import List, Dict, Any
 
 
 class UserInput(BaseModel):
-   age: int
+    age: int
     gender: str
     weight: float
     height: float
 
-    fitnessGoal: str = Field(..., description="Fitness goal")
-    experienceLevel: str = Field(..., description="User experience level")
-    workoutLocation: str = Field(..., description="Gym or bodyweight")
-    workoutDays: int = Field(..., description="Days per week")
-
+    fitnessGoal: str
+    experienceLevel: str
+    workoutLocation: str
+    workoutDays: int
 
 
 class ExerciseItem(BaseModel):
