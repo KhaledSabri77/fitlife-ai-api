@@ -71,7 +71,8 @@ def calculate_calories(user: UserInput) -> int:
         bmr = 10 * user.weight + 6.25 * (user.height * 100) - 5 * user.age - 161
     activity = {1: 1.2, 2: 1.375, 3: 1.55, 4: 1.55, 5: 1.725, 6: 1.725, 7: 1.9}
     tdee = bmr * activity.get(user.workout_days, 1.55)
-    goal = user.goal.lower().replace(" ", "_")
+    goal = user.fitnessGoal.lower().replace(" ", "_")
+    user.workoutDays
     if goal in ("lose_weight", "fat_loss", "cut"):
         return max(1800, min(2200, int(tdee - 500)))
     elif goal in ("gain_muscle", "bulk", "muscle_gain"):
@@ -84,6 +85,7 @@ def calculate_calories(user: UserInput) -> int:
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 def build_recommendations(bmi_cat: str, goal: str, days: int) -> str:
+    goal, days = user.fitnessGoal, user.workoutDays
     parts = []
     if bmi_cat == "Underweight":
         parts.append("Your BMI indicates you are underweight. Focus on calorie-surplus meals with adequate protein.")
@@ -150,7 +152,9 @@ SPLITS = {
 
 
 def build_workout(user: UserInput) -> list:
-    split = SPLITS.get(user.workout_days, SPLITS[3])
+    split = SPLITS.get(user.workoutDays, SPLITS[3])
+
+if user.experienceLevel.lower() == "beginner":
     result = []
     for day_groups in split:
         for group in day_groups:
