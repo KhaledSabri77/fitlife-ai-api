@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Dict, Any
 
 
@@ -27,21 +27,9 @@ class ExerciseItem(BaseModel):
         populate_by_name = True
 
 
-class DietPlan(BaseModel):
-    daily_calorie_target: str
-    Breakfast_Suggestion: List[str] = Field(..., alias="Breakfast Suggestion")
-    Lunch_Suggestion: List[str] = Field(..., alias="Lunch Suggestion")
-    Dinner_Suggestion: List[str] = Field(..., alias="Dinner Suggestion")
-    Snack_Suggestion: List[str] = Field(..., alias="Snack Suggestion")
-
-    class Config:
-        populate_by_name = True
-
-
 class PlanResponse(BaseModel):
     bmi: float
     bmi_category: str
     daily_calorie_target: float
     recommendations: str
     workout_plan: List[Dict[str, Any]]
-    diet_plan: Dict[str, Any]
