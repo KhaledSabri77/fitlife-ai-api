@@ -1,56 +1,5 @@
 from schemas import UserInput
 
-# ── BMI Calculation ──
-
-def calculate_bmi(weight: float, height: float) -> float:
-    """BMI = weight (kg) / height (m)^2"""
-    return round(weight / (height ** 2), 2)
-
-def get_bmi_category(bmi: float) -> str:
-    if bmi < 18.5: return "Underweight"
-    elif bmi < 25.0: return "Normal weight"
-    elif bmi < 30.0: return "Overweight"
-    else: return "Obese"
-
-# ── Calorie Target ──
-
-def calculate_daily_calories(user: UserInput, bmi_category: str) -> int:
-    """Mifflin-St Jeor estimation + goal adjustment."""
-    if user.gender.lower() in ("male", "m"):
-        bmr = 10 * user.weight + 6.25 * (user.height * 100) - 5 * user.age + 5
-    else:
-        bmr = 10 * user.weight + 6.25 * (user.height * 100) - 5 * user.age - 161
-    activity_map = {1: 1.2, 2: 1.375, 3: 1.55, 4: 1.55, 5: 1.725, 6: 1.725, 7: 1.9}
-    tdee = bmr * activity_map.get(user.workout_days, 1.55)
-    goal = user.goal.lower().replace(" ", "_")
-    if goal in ("lose_weight", "fat_loss", "cut"): return int(tdee - 500)
-    elif goal in ("gain_muscle", "bulk", "muscle_gain"): return int(tdee + 300)
-    else: return int(tdee)
-
-# ── Recommendations ──
-
-def generate_recommendations(user: UserInput, bmi_category: str) -> str:
-    goal = user.goal.lower().replace(" ", "_")
-    parts = []
-    if bmi_category == "Underweight":
-        parts.append("Focus on calorie-surplus meals with adequate protein to build mass.")
-    elif bmi_category in ("Overweight", "Obese"):
-        parts.append("Prioritize a moderate calorie deficit with high-protein foods to preserve muscle.")
-    else:
-        parts.append("Maintain a balanced diet aligned with your fitness goal.")
-    if goal in ("lose_weight", "fat_loss", "cut"):
-        parts.append("Include 3-4 cardio sessions per week alongside resistance training.")
-    elif goal in ("gain_muscle", "bulk", "muscle_gain"):
-        parts.append("Emphasize progressive overload with compound lifts and sufficient rest days.")
-    else:
-        parts.append("Combine strength and cardiovascular training for overall fitness.")
-    level = user.level.lower()
-    if level == "beginner":
-        parts.append("Start with lighter weights and master form before increasing intensity.")
-    elif level == "advanced":
-        parts.append("Incorporate advanced techniques like supersets, drop sets, and periodization.")
-    return " ".join(parts)
-
 # ── Workout Plan ──
 
 _EX = {
@@ -116,8 +65,8 @@ _BW = {
     ],
 }
 
-def _select_pool(equipment: str) -> dict:
-    if equipment.lower() in ("none", "bodyweight", "no equipment"):
+def _select_pool(workoutLocation: str) -> dict:
+    if workoutLocation.lower() in ("home", "outdoor", "none", "bodyweight", "no equipment"):
         return _BW
     return _EX
 
@@ -134,13 +83,13 @@ def _muscle_split(days: int) -> list[list[str]]:
     return s.get(days, s[3])
 
 def generate_workout_plan(user: UserInput) -> list[dict]:
-    pool = _select_pool(user.equipment)
-    split = _muscle_split(user.workout_days)
+    pool = _select_pool(user.workoutLocation)
+    split = _muscle_split(user.workoutDays)
     exercises: list[dict] = []
     for day_muscles in split:
         for muscle in day_muscles:
             available = pool.get(muscle, [])
-            pick = available[:2] if user.level.lower() != "beginner" else available[:1]
+            pick = available[:2] if user.experienceLevel.lower() != "beginner" else available[:1]
             exercises.extend(pick)
     # Guarantee at least 4 exercises
     if len(exercises) < 4:
@@ -149,7 +98,7 @@ def generate_workout_plan(user: UserInput) -> list[dict]:
                 exercises.append(ex)
             if len(exercises) >= 4:
                 break
-    if user.level.lower() == "beginner":
+    if user.experienceLevel.lower() == "beginner":
         for ex in exercises:
             ex["Sets"] = str(max(2, int(ex["Sets"]) - 1))
     return exercises
@@ -157,15 +106,7 @@ def generate_workout_plan(user: UserInput) -> list[dict]:
 # ── Orchestrator ──
 
 def generate_plan(user: UserInput) -> dict:
-    bmi = calculate_bmi(user.weight, user.height)
-    bmi_category = get_bmi_category(bmi)
-    daily_calories = calculate_daily_calories(user, bmi_category)
-    recommendations = generate_recommendations(user, bmi_category)
     workout_plan = generate_workout_plan(user)
     return {
-        "bmi": bmi,
-        "bmi_category": bmi_category,
-        "daily_calorie_target": daily_calories,
-        "recommendations": recommendations,
         "workout_plan": workout_plan,
     }
