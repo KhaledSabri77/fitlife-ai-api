@@ -17,13 +17,13 @@ from pydantic import BaseModel, Field
 class UserInput(BaseModel):
     age: int = Field(..., ge=10, le=120)
     gender: str
-    weight: float = Field(..., gt=0)
     height: float = Field(..., gt=0)
-    goal: str
-    workout_days: int = Field(..., ge=1, le=7)
-    level: str
-    equipment: str
-    dietary_preference: str
+    weight: float = Field(..., gt=0)
+    fitnessGoal: str
+    activityLevel: str
+    experienceLevel: str
+    workoutLocation: str
+    workoutDays: int = Field(..., ge=1, le=7)
 
 
 class ExerciseItem(BaseModel):
@@ -38,71 +38,7 @@ class ExerciseItem(BaseModel):
 
 
 class PlanResponse(BaseModel):
-    bmi: float
-    bmi_category: str
-    daily_calorie_target: int
-    recommendations: str
     workout_plan: List[dict]
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# BMI Logic
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-def calculate_bmi(weight: float, height: float) -> float:
-    return round(weight / (height ** 2), 2)
-
-
-def classify_bmi(bmi: float) -> str:
-    if bmi < 18.5: return "Underweight"
-    elif bmi < 25.0: return "Normal"
-    elif bmi < 30.0: return "Overweight"
-    return "Obese"
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Calorie Logic
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-def calculate_calories(user: UserInput) -> int:
-    if user.gender.lower() in ("male", "m"):
-        bmr = 10 * user.weight + 6.25 * (user.height * 100) - 5 * user.age + 5
-    else:
-        bmr = 10 * user.weight + 6.25 * (user.height * 100) - 5 * user.age - 161
-    activity = {1: 1.2, 2: 1.375, 3: 1.55, 4: 1.55, 5: 1.725, 6: 1.725, 7: 1.9}
-    tdee = bmr * activity.get(user.workout_days, 1.55)
-    goal = user.goal.lower().replace(" ", "_")
-    if goal in ("lose_weight", "fat_loss", "cut"):
-        return max(1800, min(2200, int(tdee - 500)))
-    elif goal in ("gain_muscle", "bulk", "muscle_gain"):
-        return max(2200, min(2800, int(tdee + 300)))
-    return max(1800, min(2200, int(tdee)))
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Recommendations
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-def build_recommendations(bmi_cat: str, goal: str, days: int) -> str:
-    parts = []
-    if bmi_cat == "Underweight":
-        parts.append("Your BMI indicates you are underweight. Focus on calorie-surplus meals with adequate protein.")
-    elif bmi_cat in ("Overweight", "Obese"):
-        parts.append(f"Your BMI falls in the {bmi_cat} range. Prioritize a moderate calorie deficit with high-protein foods.")
-    else:
-        parts.append("Your BMI is in the normal range. Maintain a balanced diet aligned with your goal.")
-    g = goal.lower().replace(" ", "_")
-    if g in ("lose_weight", "fat_loss", "cut"):
-        parts.append(f"For fat loss with {days} training days, include cardio and resistance training.")
-    elif g in ("gain_muscle", "bulk", "muscle_gain"):
-        parts.append(f"For muscle gain with {days} training days, emphasize progressive overload and compound lifts.")
-    else:
-        parts.append(f"With {days} training days, combine strength and cardio for overall fitness.")
-    if days <= 2:
-        parts.append("Consider adding an extra day for active recovery like walking or yoga.")
-    elif days >= 6:
-        parts.append("Ensure at least one full rest day per week for recovery.")
-    return " ".join(parts)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -150,7 +86,7 @@ SPLITS = {
 
 
 def build_workout(user: UserInput) -> list:
-    split = SPLITS.get(user.workout_days, SPLITS[3])
+    split = SPLITS.get(user.workoutDays, SPLITS[3])
     result = []
     for day_groups in split:
         for group in day_groups:
@@ -163,7 +99,7 @@ def build_workout(user: UserInput) -> list:
                 result.append(ex)
             if len(result) >= 4:
                 break
-    if user.level.lower() == "beginner":
+    if user.experienceLevel.lower() == "beginner":
         for ex in result:
             ex["Sets"] = str(max(2, int(ex["Sets"]) - 1))
     return result
@@ -174,16 +110,8 @@ def build_workout(user: UserInput) -> list:
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 def generate_plan(user: UserInput) -> dict:
-    bmi = calculate_bmi(user.weight, user.height)
-    bmi_cat = classify_bmi(bmi)
-    cal = calculate_calories(user)
-    recs = build_recommendations(bmi_cat, user.goal, user.workout_days)
     workout = build_workout(user)
     return {
-        "bmi": bmi,
-        "bmi_category": bmi_cat,
-        "daily_calorie_target": cal,
-        "recommendations": recs,
         "workout_plan": workout,
     }
 
@@ -195,7 +123,7 @@ def generate_plan(user: UserInput) -> dict:
 app = FastAPI(
     title="AI Fitness Workout Planner",
     description="Generate personalized workout plans based on your profile.",
-    version="3.0.0",
+    version="4.0.0",
 )
 
 app.add_middleware(
