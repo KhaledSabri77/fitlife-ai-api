@@ -1,9 +1,9 @@
 """
-main.py - FitLife AI Fitness & Nutrition Planner (fully self-contained).
+main.py - FitLife AI Workout Planner (fully self-contained).
 All logic inline - no placeholder values.
 """
 import os
-from typing import List, Optional
+from typing import List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,24 +26,6 @@ class UserInput(BaseModel):
     dietary_preference: str
 
 
-class MealItem(BaseModel):
-    name: str
-    calories: int
-    protein: int
-    carbohydrates: int
-    fat: int
-
-
-class DietPlan(BaseModel):
-    daily_calorie_target: int
-    Breakfast_Suggestion: List[MealItem] = Field(alias="Breakfast Suggestion")
-    Lunch_Suggestion: List[MealItem] = Field(alias="Lunch Suggestion")
-    Dinner_Suggestion: List[MealItem] = Field(alias="Dinner Suggestion")
-    Snack_Suggestion: List[MealItem] = Field(alias="Snack Suggestion")
-    class Config:
-        populate_by_name = True
-
-
 class ExerciseItem(BaseModel):
     Exercise_Name: str = Field(alias="Exercise Name")
     Execution: str
@@ -61,7 +43,6 @@ class PlanResponse(BaseModel):
     daily_calorie_target: int
     recommendations: str
     workout_plan: List[dict]
-    diet_plan: dict
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -73,12 +54,9 @@ def calculate_bmi(weight: float, height: float) -> float:
 
 
 def classify_bmi(bmi: float) -> str:
-    if bmi < 18.5:
-        return "Underweight"
-    elif bmi < 25.0:
-        return "Normal"
-    elif bmi < 30.0:
-        return "Overweight"
+    if bmi < 18.5: return "Underweight"
+    elif bmi < 25.0: return "Normal"
+    elif bmi < 30.0: return "Overweight"
     return "Obese"
 
 
@@ -113,7 +91,6 @@ def build_recommendations(bmi_cat: str, goal: str, days: int) -> str:
         parts.append(f"Your BMI falls in the {bmi_cat} range. Prioritize a moderate calorie deficit with high-protein foods.")
     else:
         parts.append("Your BMI is in the normal range. Maintain a balanced diet aligned with your goal.")
-
     g = goal.lower().replace(" ", "_")
     if g in ("lose_weight", "fat_loss", "cut"):
         parts.append(f"For fat loss with {days} training days, include cardio and resistance training.")
@@ -121,7 +98,6 @@ def build_recommendations(bmi_cat: str, goal: str, days: int) -> str:
         parts.append(f"For muscle gain with {days} training days, emphasize progressive overload and compound lifts.")
     else:
         parts.append(f"With {days} training days, combine strength and cardio for overall fitness.")
-
     if days <= 2:
         parts.append("Consider adding an extra day for active recovery like walking or yoga.")
     elif days >= 6:
@@ -180,106 +156,17 @@ def build_workout(user: UserInput) -> list:
         for group in day_groups:
             for ex in EXERCISES.get(group, [])[:2]:
                 result.append(ex)
+    # Guarantee at least 4 exercises
+    if len(result) < 4:
+        for ex in EXERCISES.get("legs", []) + EXERCISES.get("core", []):
+            if ex not in result:
+                result.append(ex)
+            if len(result) >= 4:
+                break
     if user.level.lower() == "beginner":
         for ex in result:
             ex["Sets"] = str(max(2, int(ex["Sets"]) - 1))
     return result
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Diet Plan (with macros)
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-MEALS = {
-    "standard": {
-        "Breakfast Suggestion": [
-            {"name": "Scrambled eggs with whole-grain toast", "calories": 420, "protein": 28, "carbohydrates": 35, "fat": 18},
-            {"name": "Greek yogurt with granola and berries", "calories": 350, "protein": 22, "carbohydrates": 45, "fat": 10},
-            {"name": "Oatmeal with banana and peanut butter", "calories": 450, "protein": 15, "carbohydrates": 60, "fat": 16},
-        ],
-        "Lunch Suggestion": [
-            {"name": "Grilled chicken with brown rice and broccoli", "calories": 550, "protein": 42, "carbohydrates": 55, "fat": 14},
-            {"name": "Turkey avocado wrap with side salad", "calories": 520, "protein": 35, "carbohydrates": 40, "fat": 22},
-            {"name": "Salmon with quinoa and roasted vegetables", "calories": 580, "protein": 38, "carbohydrates": 48, "fat": 20},
-        ],
-        "Dinner Suggestion": [
-            {"name": "Lean steak with sweet potato and asparagus", "calories": 600, "protein": 45, "carbohydrates": 50, "fat": 18},
-            {"name": "Baked chicken thighs with mixed vegetables", "calories": 520, "protein": 40, "carbohydrates": 35, "fat": 20},
-            {"name": "Shrimp stir-fry with brown rice", "calories": 480, "protein": 32, "carbohydrates": 55, "fat": 12},
-        ],
-        "Snack Suggestion": [
-            {"name": "Mixed nuts and dried fruit", "calories": 280, "protein": 8, "carbohydrates": 30, "fat": 16},
-            {"name": "Protein shake with banana", "calories": 320, "protein": 30, "carbohydrates": 35, "fat": 5},
-            {"name": "Apple slices with almond butter", "calories": 250, "protein": 6, "carbohydrates": 28, "fat": 14},
-        ],
-    },
-    "vegetarian": {
-        "Breakfast Suggestion": [
-            {"name": "Veggie omelette with cheese and toast", "calories": 400, "protein": 24, "carbohydrates": 30, "fat": 20},
-            {"name": "Smoothie bowl with berries and seeds", "calories": 380, "protein": 14, "carbohydrates": 55, "fat": 12},
-        ],
-        "Lunch Suggestion": [
-            {"name": "Chickpea curry with brown rice", "calories": 520, "protein": 22, "carbohydrates": 70, "fat": 14},
-            {"name": "Black bean quesadilla with guacamole", "calories": 560, "protein": 24, "carbohydrates": 55, "fat": 26},
-        ],
-        "Dinner Suggestion": [
-            {"name": "Stuffed bell peppers with rice and beans", "calories": 480, "protein": 20, "carbohydrates": 60, "fat": 14},
-            {"name": "Tofu stir-fry with noodles", "calories": 500, "protein": 28, "carbohydrates": 55, "fat": 16},
-        ],
-        "Snack Suggestion": [
-            {"name": "Hummus with carrot and celery sticks", "calories": 220, "protein": 8, "carbohydrates": 24, "fat": 12},
-            {"name": "Cottage cheese with pineapple", "calories": 200, "protein": 18, "carbohydrates": 22, "fat": 4},
-        ],
-    },
-    "vegan": {
-        "Breakfast Suggestion": [
-            {"name": "Chia pudding with coconut milk and mango", "calories": 360, "protein": 10, "carbohydrates": 45, "fat": 16},
-            {"name": "Avocado toast with cherry tomatoes", "calories": 380, "protein": 10, "carbohydrates": 38, "fat": 22},
-        ],
-        "Lunch Suggestion": [
-            {"name": "Lentil soup with crusty bread", "calories": 480, "protein": 24, "carbohydrates": 65, "fat": 10},
-            {"name": "Buddha bowl with chickpeas and tahini", "calories": 540, "protein": 20, "carbohydrates": 60, "fat": 22},
-        ],
-        "Dinner Suggestion": [
-            {"name": "Tofu stir-fry with brown rice", "calories": 500, "protein": 26, "carbohydrates": 58, "fat": 16},
-            {"name": "Stuffed sweet potatoes with black beans", "calories": 460, "protein": 18, "carbohydrates": 65, "fat": 12},
-        ],
-        "Snack Suggestion": [
-            {"name": "Edamame with sea salt", "calories": 190, "protein": 17, "carbohydrates": 14, "fat": 8},
-            {"name": "Energy balls with oats and dates", "calories": 240, "protein": 6, "carbohydrates": 36, "fat": 10},
-        ],
-    },
-    "keto": {
-        "Breakfast Suggestion": [
-            {"name": "Bacon and eggs with avocado", "calories": 520, "protein": 30, "carbohydrates": 6, "fat": 42},
-            {"name": "Keto smoothie with MCT oil and spinach", "calories": 400, "protein": 20, "carbohydrates": 8, "fat": 32},
-        ],
-        "Lunch Suggestion": [
-            {"name": "Grilled chicken Caesar salad (no croutons)", "calories": 480, "protein": 40, "carbohydrates": 8, "fat": 32},
-            {"name": "Bunless cheeseburger lettuce wrap", "calories": 520, "protein": 38, "carbohydrates": 6, "fat": 38},
-        ],
-        "Dinner Suggestion": [
-            {"name": "Salmon with butter-sauteed asparagus", "calories": 560, "protein": 42, "carbohydrates": 8, "fat": 40},
-            {"name": "Pork chops with creamed spinach", "calories": 580, "protein": 40, "carbohydrates": 10, "fat": 42},
-        ],
-        "Snack Suggestion": [
-            {"name": "Cheese crisps", "calories": 180, "protein": 12, "carbohydrates": 2, "fat": 14},
-            {"name": "Handful of macadamia nuts", "calories": 240, "protein": 4, "carbohydrates": 4, "fat": 24},
-        ],
-    },
-}
-
-
-def build_diet(user: UserInput, daily_cal: int) -> dict:
-    pref = user.dietary_preference.lower().strip()
-    meals = MEALS.get(pref, MEALS["standard"])
-    return {
-        "daily_calorie_target": daily_cal,
-        "Breakfast Suggestion": meals["Breakfast Suggestion"],
-        "Lunch Suggestion": meals["Lunch Suggestion"],
-        "Dinner Suggestion": meals["Dinner Suggestion"],
-        "Snack Suggestion": meals["Snack Suggestion"],
-    }
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -292,14 +179,12 @@ def generate_plan(user: UserInput) -> dict:
     cal = calculate_calories(user)
     recs = build_recommendations(bmi_cat, user.goal, user.workout_days)
     workout = build_workout(user)
-    diet = build_diet(user, cal)
     return {
         "bmi": bmi,
         "bmi_category": bmi_cat,
         "daily_calorie_target": cal,
         "recommendations": recs,
         "workout_plan": workout,
-        "diet_plan": diet,
     }
 
 
@@ -308,9 +193,9 @@ def generate_plan(user: UserInput) -> dict:
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app = FastAPI(
-    title="AI Fitness & Nutrition Planner",
-    description="Generate personalized workout and diet plans based on your profile.",
-    version="2.0.0",
+    title="AI Fitness Workout Planner",
+    description="Generate personalized workout plans based on your profile.",
+    version="3.0.0",
 )
 
 app.add_middleware(
