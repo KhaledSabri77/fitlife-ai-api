@@ -17,13 +17,11 @@ from pydantic import BaseModel, Field
 class UserInput(BaseModel):
     age: int = Field(..., ge=10, le=120)
     gender: str
-    weight: float = Field(..., gt=0)
     height: float = Field(..., gt=0)
-    goal: str
+    weight: float = Field(..., gt=0)
+    fitnessGoal: str
     workout_days: int = Field(..., ge=1, le=7)
-    level: str
     equipment: str
-    dietary_preference: str
 
 
 class ExerciseItem(BaseModel):
@@ -72,7 +70,6 @@ def calculate_calories(user: UserInput) -> int:
     activity = {1: 1.2, 2: 1.375, 3: 1.55, 4: 1.55, 5: 1.725, 6: 1.725, 7: 1.9}
     tdee = bmr * activity.get(user.workout_days, 1.55)
     goal = user.fitnessGoal.lower().replace(" ", "_")
-    user.workoutDays
     if goal in ("lose_weight", "fat_loss", "cut"):
         return max(1800, min(2200, int(tdee - 500)))
     elif goal in ("gain_muscle", "bulk", "muscle_gain"):
@@ -85,7 +82,6 @@ def calculate_calories(user: UserInput) -> int:
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 def build_recommendations(bmi_cat: str, goal: str, days: int) -> str:
-    goal, days = user.fitnessGoal, user.workoutDays
     parts = []
     if bmi_cat == "Underweight":
         parts.append("Your BMI indicates you are underweight. Focus on calorie-surplus meals with adequate protein.")
@@ -152,24 +148,18 @@ SPLITS = {
 
 
 def build_workout(user: UserInput) -> list:
-    split = SPLITS.get(user.workoutDays, SPLITS[3])
-
-if user.experienceLevel.lower() == "beginner":
+    split = SPLITS.get(user.workout_days, SPLITS[3])
     result = []
     for day_groups in split:
         for group in day_groups:
             for ex in EXERCISES.get(group, [])[:2]:
                 result.append(ex)
-    # Guarantee at least 4 exercises
     if len(result) < 4:
         for ex in EXERCISES.get("legs", []) + EXERCISES.get("core", []):
             if ex not in result:
                 result.append(ex)
             if len(result) >= 4:
                 break
-    if user.level.lower() == "beginner":
-        for ex in result:
-            ex["Sets"] = str(max(2, int(ex["Sets"]) - 1))
     return result
 
 
@@ -181,7 +171,7 @@ def generate_plan(user: UserInput) -> dict:
     bmi = calculate_bmi(user.weight, user.height)
     bmi_cat = classify_bmi(bmi)
     cal = calculate_calories(user)
-    recs = build_recommendations(bmi_cat, user.goal, user.workout_days)
+    recs = build_recommendations(bmi_cat, user.fitnessGoal, user.workout_days)
     workout = build_workout(user)
     return {
         "bmi": bmi,

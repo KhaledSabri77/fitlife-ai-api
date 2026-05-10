@@ -6,13 +6,12 @@ from typing import List, Dict, Any
 class UserInput(BaseModel):
     age: int
     gender: str
-    weight: float
     height: float
+    weight: float
 
     fitnessGoal: str
-    experienceLevel: str
-    workoutLocation: str
-    workoutDays: int
+    workout_days: int
+    equipment: str
 
 
 class ExerciseItem(BaseModel):
