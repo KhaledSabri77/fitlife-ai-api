@@ -19,13 +19,11 @@ curl -X POST https://YOUR-APP.koyeb.app/generate-plan \
   -d '{
     "age": 28,
     "gender": "male",
-    "weight": 82.0,
     "height": 1.78,
-    "goal": "gain_muscle",
+    "weight": 82.0,
+    "fitnessGoal": "gain_muscle",
     "workout_days": 4,
-    "level": "intermediate",
-    "equipment": "full_gym",
-    "dietary_preference": "standard"
+    "equipment": "full_gym"
   }'
 ```
 

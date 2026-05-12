@@ -1,15 +1,14 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any
-
+from typing import Dict, Any, List
 
 
 class UserInput(BaseModel):
     age: int
     gender: str
-    weight: float
     height: float
-
+    weight: float
     fitnessGoal: str
+    activityLevel: str
     experienceLevel: str
     workoutLocation: str
     workoutDays: int
@@ -30,6 +29,4 @@ class ExerciseItem(BaseModel):
 class PlanResponse(BaseModel):
     bmi: float
     bmi_category: str
-    daily_calorie_target: float
-    recommendations: str
-    workout_plan: List[Dict[str, Any]]
+    workout_plan: Dict[str, List[Dict[str, Any]]]
